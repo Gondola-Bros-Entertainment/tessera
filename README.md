@@ -21,3 +21,8 @@ Link the `tessera::tessera` target from your CMake project.
     tessera::Canvas c = tessera::radialGradient(256, 256, 128, 128, 128,
                                                 {60, 40, 120, 255}, tessera::black);
     tessera::fillCircle(c, 128, 128, 40, {180, 160, 255, 255});
+    tessera::writePng("tessera.png", c);
+
+## License
+
+BSD-3-Clause. See [LICENSE](LICENSE).
