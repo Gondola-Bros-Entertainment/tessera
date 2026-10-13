@@ -30,7 +30,7 @@ inline bool inBounds(const Canvas &c, int x, int y) { return x >= 0 && x < c.w &
 template <class F> Canvas generate(int w, int h, F &&at) {
     const int sw = w < 1 ? 1 : w;
     const int sh = h < 1 ? 1 : h;
-    Canvas c{sw, sh, std::vector<std::uint8_t>(static_cast<std::size_t>(sw) * sh * 4)};
+    Canvas c{sw, sh, std::vector<std::uint8_t>(static_cast<std::size_t>(sw) * static_cast<std::size_t>(sh) * 4u)};
     std::size_t o = 0;
     for (int y = 0; y < sh; ++y)
         for (int x = 0; x < sw; ++x) {
