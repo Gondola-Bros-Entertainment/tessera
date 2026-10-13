@@ -1,5 +1,5 @@
 // tessera - bitmap font rendering with a built-in 8x8 pixel font.
-// Covers printable ASCII (32-126); other characters render as a filled box.
+// Covers printable ASCII (32-126); other characters render as an outlined box.
 #pragma once
 
 #include "Canvas.hpp"
