@@ -1,6 +1,6 @@
 // tessera - Noise implementation: value/Perlin samplers and fBm/turbulence.
-// Lattice hashing uses a 64-bit intermediate to avoid overflow, then masks to
-// 31 bits to keep the value non-negative before normalizing.
+// Lattice hashing runs in unsigned 64-bit arithmetic, which wraps by definition,
+// and keeps the low 31 bits of each LCG step before normalizing.
 #include "tessera/Noise.hpp"
 
 #include <algorithm>
@@ -10,29 +10,31 @@
 namespace tessera {
 namespace {
 
-constexpr std::int64_t lcgMultiplier = 1103515245;
-constexpr std::int64_t lcgIncrement = 12345;
-constexpr std::int64_t lcgBitmask = 2147483647; // 2^31 - 1
+constexpr std::uint64_t lcgMultiplier = 1103515245u;
+constexpr std::uint64_t lcgIncrement = 12345u;
+constexpr std::uint64_t lcgBitmask = 2147483647u; // 2^31 - 1
 constexpr double lcgMaxF = 2147483647.0;
-constexpr std::int64_t latticeHashX = 374761393;
-constexpr std::int64_t latticeHashY = 668265263;
+constexpr std::uint64_t latticeHashX = 374761393u;
+constexpr std::uint64_t latticeHashY = 668265263u;
 constexpr std::int64_t octaveSeed = 1337;
 constexpr double persistence = 0.5;
 constexpr double lacunarity = 2.0;
 constexpr double invSqrt2 = 0.7071067811865476;
-constexpr int gradientMask = 7;       // select one of 8 gradient vectors
-constexpr double channelMaxF = 255.0; // [0,1] sample -> 8-bit channel
+constexpr std::uint64_t gradientMask = 7u; // select one of 8 gradient vectors
+constexpr double channelMaxF = 255.0;      // [0,1] sample -> 8-bit channel
 
-std::int64_t lcgHash(std::int64_t s) {
-    const auto step = [](std::int64_t v) { return (v * lcgMultiplier + lcgIncrement) & lcgBitmask; };
+std::uint64_t lcgHash(std::uint64_t s) {
+    const auto step = [](std::uint64_t v) { return (v * lcgMultiplier + lcgIncrement) & lcgBitmask; };
     return step(step(step(s)));
 }
 
-double latticeValue(std::int64_t seed, int x, int y) {
-    const std::int64_t hash =
-        lcgHash(seed + static_cast<std::int64_t>(x) * latticeHashX + static_cast<std::int64_t>(y) * latticeHashY);
-    return static_cast<double>(hash) / lcgMaxF;
+// Negative seeds and coordinates convert modulo 2^64, which keeps their two's-complement bits.
+std::uint64_t latticeHash(std::int64_t seed, int x, int y) {
+    return lcgHash(static_cast<std::uint64_t>(seed) + static_cast<std::uint64_t>(x) * latticeHashX +
+                   static_cast<std::uint64_t>(y) * latticeHashY);
 }
+
+double latticeValue(std::int64_t seed, int x, int y) { return static_cast<double>(latticeHash(seed, x, y)) / lcgMaxF; }
 
 double smoothstep(double t) { return t * t * (3.0 - 2.0 * t); }
 double lerpD(double t, double a, double b) { return a + t * (b - a); }
@@ -44,8 +46,8 @@ double totalAmplitude(int octaves) {
 struct Vec2d {
     double x, y;
 };
-Vec2d gradientVector(int idx) {
-    switch (idx & gradientMask) {
+Vec2d gradientVector(std::uint64_t hash) {
+    switch (hash & gradientMask) {
     case 0:
         return {1.0, 0.0};
     case 1:
@@ -66,9 +68,7 @@ Vec2d gradientVector(int idx) {
 }
 
 double gradDot(std::int64_t seed, int gx, int gy, double dx, double dy) {
-    const std::int64_t hash =
-        lcgHash(seed + static_cast<std::int64_t>(gx) * latticeHashX + static_cast<std::int64_t>(gy) * latticeHashY);
-    const Vec2d grad = gradientVector(static_cast<int>(hash & gradientMask));
+    const Vec2d grad = gradientVector(latticeHash(seed, gx, gy));
     return grad.x * dx + grad.y * dy;
 }
 

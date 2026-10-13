@@ -20,17 +20,18 @@ constexpr double goldenAngle = 2.399963;
 // LCG step for seed variation.
 constexpr int lcgStep = 7;
 
-// LCG constants. Arithmetic is 64-bit to avoid overflow, then masked to 31 bits
-// to keep the value non-negative before normalizing.
-constexpr std::int64_t lcgMul = 1103515245;
-constexpr std::int64_t lcgInc = 12345;
-constexpr std::int64_t lcgMod = 2147483648;  // 2^31
-constexpr std::int64_t lcgMask = 2147483647; // 2^31 - 1
+// LCG constants. Arithmetic is unsigned 64-bit, which wraps by definition, then
+// masked to 31 bits before normalizing.
+constexpr std::uint64_t lcgMul = 1103515245u;
+constexpr std::uint64_t lcgInc = 12345u;
+constexpr double lcgMod = 2147483648.0;        // 2^31
+constexpr std::uint64_t lcgMask = 2147483647u; // 2^31 - 1
 
-// Deterministic fractional value in [0, 1) from a seed.
-double lcgFrac(int seed) {
-    const std::int64_t hashed = (static_cast<std::int64_t>(seed) * lcgMul + lcgInc) & lcgMask;
-    return static_cast<double>(hashed) / static_cast<double>(lcgMod);
+// Deterministic fractional value in [0, 1) from a seed. A negative seed converts
+// modulo 2^64, which keeps its two's-complement bits.
+double lcgFrac(std::int64_t seed) {
+    const std::uint64_t hashed = (static_cast<std::uint64_t>(seed) * lcgMul + lcgInc) & lcgMask;
+    return static_cast<double>(hashed) / lcgMod;
 }
 
 // Round a double to the nearest int (lround: half away from zero).
@@ -92,7 +93,8 @@ Canvas renderExplosionFrame(const ExplosionConfig &config, int frameIdx) {
     for (int particleIdx = 0; particleIdx < config.particleCount; ++particleIdx) {
         const std::int64_t angleSeed = static_cast<std::int64_t>(particleIdx) * lcgStep + config.seed;
         const double angle = static_cast<double>(angleSeed) * goldenAngle;
-        const double dist = progress * maxRadius * (distBase + distJitter * lcgFrac(particleIdx + config.seed));
+        const double dist = progress * maxRadius *
+                            (distBase + distJitter * lcgFrac(static_cast<std::int64_t>(particleIdx) + config.seed));
         const int px = center + iround(std::cos(angle) * dist);
         const int py = center + iround(std::sin(angle) * dist);
         const double alpha = std::max(0.0, 1.0 - progress);
@@ -170,7 +172,8 @@ Canvas renderSparksFrame(const SparksConfig &config, int frameIdx) {
     for (int sparkIdx = 0; sparkIdx < config.count; ++sparkIdx) {
         const std::int64_t angleSeed = static_cast<std::int64_t>(sparkIdx) * lcgStep + config.seed;
         const double angle = static_cast<double>(angleSeed) * goldenAngle;
-        const double speed = sparkSpeedBase + lcgFrac(sparkIdx + config.seed * sparkSpeedSeedMul);
+        const double speed = sparkSpeedBase + lcgFrac(static_cast<std::int64_t>(sparkIdx) +
+                                                      static_cast<std::int64_t>(config.seed) * sparkSpeedSeedMul);
         const double dist = progress * static_cast<double>(center) * speed;
         const int px = center + iround(std::cos(angle) * dist);
         const int py = center + iround(std::sin(angle) * dist);
