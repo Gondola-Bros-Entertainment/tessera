@@ -10,7 +10,7 @@ namespace {
 constexpr int fontW = 8;
 constexpr int fontH = 8;
 
-// Filled box outline for characters outside printable ASCII.
+// Outlined box for characters outside printable ASCII.
 constexpr std::uint8_t unknownGlyph[fontH] = {0xFF, 0x81, 0x81, 0x81, 0x81, 0x81, 0x81, 0xFF};
 
 // Printable ASCII (32-126), one entry per character. Each entry is 8 row bytes,
