@@ -9,8 +9,10 @@ namespace tessera {
 Canvas linearGradient(int w, int h, Color start, Color end, bool horizontal) {
     return generate(w, h, [&](int x, int y) {
         double t;
-        if (horizontal) t = w <= 1 ? 0.0 : static_cast<double>(x) / (w - 1);
-        else            t = h <= 1 ? 0.0 : static_cast<double>(y) / (h - 1);
+        if (horizontal)
+            t = w <= 1 ? 0.0 : static_cast<double>(x) / (w - 1);
+        else
+            t = h <= 1 ? 0.0 : static_cast<double>(y) / (h - 1);
         return lerp(t, start, end);
     });
 }
@@ -26,9 +28,7 @@ Canvas radialGradient(int w, int h, int cx, int cy, int radius, Color inner, Col
 
 Canvas diagonalGradient(int w, int h, Color start, Color end) {
     const double maxDist = std::max(1, (w - 1) + (h - 1));
-    return generate(w, h, [&](int x, int y) {
-        return lerp(static_cast<double>(x + y) / maxDist, start, end);
-    });
+    return generate(w, h, [&](int x, int y) { return lerp(static_cast<double>(x + y) / maxDist, start, end); });
 }
 
 } // namespace tessera

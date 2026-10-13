@@ -11,17 +11,17 @@ namespace tessera {
 namespace {
 
 constexpr std::int64_t lcgMultiplier = 1103515245;
-constexpr std::int64_t lcgIncrement  = 12345;
-constexpr std::int64_t lcgBitmask    = 2147483647;   // 2^31 - 1
-constexpr double       lcgMaxF       = 2147483647.0;
-constexpr std::int64_t latticeHashX  = 374761393;
-constexpr std::int64_t latticeHashY  = 668265263;
-constexpr std::int64_t octaveSeed    = 1337;
-constexpr double       persistence   = 0.5;
-constexpr double       lacunarity    = 2.0;
-constexpr double       invSqrt2      = 0.7071067811865476;
-constexpr int          gradientMask  = 7;       // select one of 8 gradient vectors
-constexpr double       channelMaxF   = 255.0;   // [0,1] sample -> 8-bit channel
+constexpr std::int64_t lcgIncrement = 12345;
+constexpr std::int64_t lcgBitmask = 2147483647; // 2^31 - 1
+constexpr double lcgMaxF = 2147483647.0;
+constexpr std::int64_t latticeHashX = 374761393;
+constexpr std::int64_t latticeHashY = 668265263;
+constexpr std::int64_t octaveSeed = 1337;
+constexpr double persistence = 0.5;
+constexpr double lacunarity = 2.0;
+constexpr double invSqrt2 = 0.7071067811865476;
+constexpr int gradientMask = 7;       // select one of 8 gradient vectors
+constexpr double channelMaxF = 255.0; // [0,1] sample -> 8-bit channel
 
 std::int64_t lcgHash(std::int64_t s) {
     const auto step = [](std::int64_t v) { return (v * lcgMultiplier + lcgIncrement) & lcgBitmask; };
@@ -29,8 +29,8 @@ std::int64_t lcgHash(std::int64_t s) {
 }
 
 double latticeValue(std::int64_t seed, int x, int y) {
-    const std::int64_t hash = lcgHash(seed + static_cast<std::int64_t>(x) * latticeHashX
-                                           + static_cast<std::int64_t>(y) * latticeHashY);
+    const std::int64_t hash =
+        lcgHash(seed + static_cast<std::int64_t>(x) * latticeHashX + static_cast<std::int64_t>(y) * latticeHashY);
     return static_cast<double>(hash) / lcgMaxF;
 }
 
@@ -41,23 +41,33 @@ double totalAmplitude(int octaves) {
     return (1.0 - std::pow(persistence, static_cast<double>(octaves))) / (1.0 - persistence);
 }
 
-struct Vec2d { double x, y; };
+struct Vec2d {
+    double x, y;
+};
 Vec2d gradientVector(int idx) {
     switch (idx & gradientMask) {
-        case 0:  return { 1.0, 0.0 };
-        case 1:  return { invSqrt2, invSqrt2 };
-        case 2:  return { 0.0, 1.0 };
-        case 3:  return { -invSqrt2, invSqrt2 };
-        case 4:  return { -1.0, 0.0 };
-        case 5:  return { -invSqrt2, -invSqrt2 };
-        case 6:  return { 0.0, -1.0 };
-        default: return { invSqrt2, -invSqrt2 };
+    case 0:
+        return {1.0, 0.0};
+    case 1:
+        return {invSqrt2, invSqrt2};
+    case 2:
+        return {0.0, 1.0};
+    case 3:
+        return {-invSqrt2, invSqrt2};
+    case 4:
+        return {-1.0, 0.0};
+    case 5:
+        return {-invSqrt2, -invSqrt2};
+    case 6:
+        return {0.0, -1.0};
+    default:
+        return {invSqrt2, -invSqrt2};
     }
 }
 
 double gradDot(std::int64_t seed, int gx, int gy, double dx, double dy) {
-    const std::int64_t hash = lcgHash(seed + static_cast<std::int64_t>(gx) * latticeHashX
-                                           + static_cast<std::int64_t>(gy) * latticeHashY);
+    const std::int64_t hash =
+        lcgHash(seed + static_cast<std::int64_t>(gx) * latticeHashX + static_cast<std::int64_t>(gy) * latticeHashY);
     const Vec2d grad = gradientVector(static_cast<int>(hash & gradientMask));
     return grad.x * dx + grad.y * dy;
 }
@@ -122,28 +132,28 @@ Canvas valueNoiseColor(int w, int h, int seed, double scale, Color a, Color b) {
     return generate(w, h, [&](int x, int y) { return lerp(valueSample(seed, scale, x, y), a, b); });
 }
 
-Canvas valueNoise(int w, int h, int seed, double scale) {
-    return valueNoiseColor(w, h, seed, scale, black, white);
-}
+Canvas valueNoise(int w, int h, int seed, double scale) { return valueNoiseColor(w, h, seed, scale, black, white); }
 
 Canvas perlinNoise(int w, int h, int seed, double scale) {
     return generate(w, h, [&](int x, int y) {
         const std::uint8_t g = static_cast<std::uint8_t>(std::lround(perlinSample(seed, scale, x, y) * channelMaxF));
-        return Color{ g, g, g, 255 };
+        return Color{g, g, g, 255};
     });
 }
 
 Canvas fbm(int w, int h, int seed, int octaves, double scale) {
     return generate(w, h, [&](int x, int y) {
-        const std::uint8_t g = static_cast<std::uint8_t>(std::lround(fbmSample(seed, octaves, scale, x, y) * channelMaxF));
-        return Color{ g, g, g, 255 };
+        const std::uint8_t g =
+            static_cast<std::uint8_t>(std::lround(fbmSample(seed, octaves, scale, x, y) * channelMaxF));
+        return Color{g, g, g, 255};
     });
 }
 
 Canvas turbulence(int w, int h, int seed, int octaves, double scale) {
     return generate(w, h, [&](int x, int y) {
-        const std::uint8_t g = static_cast<std::uint8_t>(std::lround(turbulenceSample(seed, octaves, scale, x, y) * channelMaxF));
-        return Color{ g, g, g, 255 };
+        const std::uint8_t g =
+            static_cast<std::uint8_t>(std::lround(turbulenceSample(seed, octaves, scale, x, y) * channelMaxF));
+        return Color{g, g, g, 255};
     });
 }
 
