@@ -13,6 +13,9 @@ function(tessera_warnings target)
         endif()
     else()
         target_compile_options(${target} PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion -Wshadow)
+        # GCC's -Wshadow and MSVC's /W4 flag a local that hides a namespace-scope variable; Clang needs
+        # -Wshadow-all for that, so every compiler reports the same shadowing.
+        target_compile_options(${target} PRIVATE $<$<CXX_COMPILER_ID:Clang,AppleClang>:-Wshadow-all>)
         if(TESSERA_WARNINGS_AS_ERRORS)
             target_compile_options(${target} PRIVATE -Werror)
         endif()

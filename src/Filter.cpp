@@ -170,9 +170,9 @@ Canvas edgeDetect(const Canvas &src) {
             return static_cast<int>(clampByte(static_cast<int>(std::lround(magnitude))));
         };
         const int avg = (edge(0) + edge(1) + edge(2)) / rgbChannelCount;
-        const std::uint8_t gray = clampByte(avg);
+        const std::uint8_t intensity = clampByte(avg);
         const std::uint8_t alpha = sampleClamped(src, x, y).a;
-        return {gray, gray, gray, alpha};
+        return {intensity, intensity, intensity, alpha};
     });
 }
 
