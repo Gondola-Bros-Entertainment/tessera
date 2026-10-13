@@ -27,6 +27,13 @@ std::uint32_t little_endian(const std::vector<std::uint8_t> &bytes, std::size_t 
            (std::uint32_t{bytes[at + 3]} << 24u);
 }
 
+/// Reads a whole file. The stream closes on return, so the file can then be removed on every platform; Windows
+/// refuses to delete a file that is still open.
+std::vector<std::uint8_t> read_file(const std::filesystem::path &path) {
+    std::ifstream file(path, std::ios::binary);
+    return {std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>()};
+}
+
 /// The CRC-32 that PNG chunks carry, computed bit by bit as an independent reference.
 std::uint32_t crc32(const std::uint8_t *data, std::size_t size) {
     std::uint32_t crc = 0xffffffffu;
@@ -138,9 +145,7 @@ TEST_CASE("Writing images saves the encoded bytes to disk") {
     const auto bmp_path = dir / "tessera_test.bmp";
     REQUIRE(writePng(png_path.string(), c));
     REQUIRE(writeBmp(bmp_path.string(), c));
-    std::ifstream png_file(png_path, std::ios::binary);
-    const std::vector<std::uint8_t> saved{std::istreambuf_iterator<char>(png_file), std::istreambuf_iterator<char>()};
-    CHECK(saved == encodePng(c));
+    CHECK(read_file(png_path) == encodePng(c));
     CHECK(std::filesystem::file_size(bmp_path) == encodeBmp(c).size());
     std::filesystem::remove(png_path);
     std::filesystem::remove(bmp_path);
