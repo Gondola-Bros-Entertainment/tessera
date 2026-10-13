@@ -10,19 +10,19 @@ namespace tessera {
 
 // A nine-slice definition: source canvas plus border insets (clamped >= 0).
 struct NineSlice {
-    Canvas canvas;  // source canvas to slice
-    int left{};     // left border width in pixels
-    int right{};    // right border width in pixels
-    int top{};      // top border height in pixels
-    int bottom{};   // bottom border height in pixels
+    Canvas canvas; // source canvas to slice
+    int left{};    // left border width in pixels
+    int right{};   // right border width in pixels
+    int top{};     // top border height in pixels
+    int bottom{};  // bottom border height in pixels
 };
 
 // Build a nine-slice from a canvas and border insets. Insets are clamped to be
 // non-negative.
-NineSlice nineSlice(const Canvas& canvas, int left, int right, int top, int bottom);
+NineSlice nineSlice(const Canvas &canvas, int left, int right, int top, int bottom);
 
 // Render a nine-slice at a target size, producing a new canvas of the given
 // dimensions with the regions properly stretched.
-Canvas renderNineSlice(const NineSlice& ns, int targetW, int targetH);
+Canvas renderNineSlice(const NineSlice &ns, int targetW, int targetH);
 
 } // namespace tessera

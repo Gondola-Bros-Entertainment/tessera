@@ -37,29 +37,27 @@ struct Cell {
 
 } // namespace
 
-IsoConfig defaultIsoConfig() {
-    return IsoConfig{ defaultTileWidth, defaultTileHeight };
-}
+IsoConfig defaultIsoConfig() { return IsoConfig{defaultTileWidth, defaultTileHeight}; }
 
-Point worldToScreen(const IsoConfig& config, int wx, int wy) {
+Point worldToScreen(const IsoConfig &config, int wx, int wy) {
     const int halfW = config.tileWidth / tileHalvingFactor;
     const int halfH = config.tileHeight / tileHalvingFactor;
     const int screenX = (wx - wy) * halfW;
     const int screenY = (wx + wy) * halfH;
-    return { screenX, screenY };
+    return {screenX, screenY};
 }
 
-Point screenToWorld(const IsoConfig& config, int screenX, int screenY) {
+Point screenToWorld(const IsoConfig &config, int screenX, int screenY) {
     const int halfW = config.tileWidth / tileHalvingFactor;
     const int halfH = config.tileHeight / tileHalvingFactor;
     const double ratioX = static_cast<double>(screenX) / std::max(1, halfW);
     const double ratioY = static_cast<double>(screenY) / std::max(1, halfH);
     const int worldX = roundHalfEven((ratioX + ratioY) / inverseScaleFactor);
     const int worldY = roundHalfEven((ratioY - ratioX) / inverseScaleFactor);
-    return { worldX, worldY };
+    return {worldX, worldY};
 }
 
-bool pointInDiamond(const IsoConfig& config, int px, int py, int dx, int dy) {
+bool pointInDiamond(const IsoConfig &config, int px, int py, int dx, int dy) {
     const int halfW = config.tileWidth / tileHalvingFactor;
     const int halfH = config.tileHeight / tileHalvingFactor;
     const int cx = dx + halfW;
@@ -72,14 +70,18 @@ bool pointInDiamond(const IsoConfig& config, int px, int py, int dx, int dy) {
 int isoDepthCompare(int wx1, int wy1, int wx2, int wy2) {
     const int sum1 = wx1 + wy1;
     const int sum2 = wx2 + wy2;
-    if (sum1 < sum2) return -1;
-    if (sum1 > sum2) return 1;
-    if (wy1 < wy2) return -1;
-    if (wy1 > wy2) return 1;
+    if (sum1 < sum2)
+        return -1;
+    if (sum1 > sum2)
+        return 1;
+    if (wy1 < wy2)
+        return -1;
+    if (wy1 > wy2)
+        return 1;
     return 0;
 }
 
-void drawDiamond(Canvas& canvas, const IsoConfig& config, int sx, int sy, Color color) {
+void drawDiamond(Canvas &canvas, const IsoConfig &config, int sx, int sy, Color color) {
     const int tw = config.tileWidth;
     const int th = config.tileHeight;
     const int halfW = tw / tileHalvingFactor;
@@ -98,7 +100,7 @@ void drawDiamond(Canvas& canvas, const IsoConfig& config, int sx, int sy, Color 
     drawLine(canvas, leftX, leftY, topX, topY, color);
 }
 
-void fillDiamond(Canvas& canvas, const IsoConfig& config, int sx, int sy, Color color) {
+void fillDiamond(Canvas &canvas, const IsoConfig &config, int sx, int sy, Color color) {
     const int tw = config.tileWidth;
     const int th = config.tileHeight;
     const int halfW = tw / tileHalvingFactor;
@@ -120,15 +122,15 @@ void fillDiamond(Canvas& canvas, const IsoConfig& config, int sx, int sy, Color 
     }
 }
 
-Canvas renderIsoMap(const IsoConfig& config,
-                    const std::vector<IsoTile>& tiles,
-                    const std::vector<std::vector<int>>& grid) {
+Canvas renderIsoMap(const IsoConfig &config, const std::vector<IsoTile> &tiles,
+                    const std::vector<std::vector<int>> &grid) {
     const int gridRows = static_cast<int>(grid.size());
     int gridCols = 0;
-    for (const std::vector<int>& row : grid)
+    for (const std::vector<int> &row : grid)
         gridCols = std::max(gridCols, static_cast<int>(row.size()));
 
-    if (gridRows == 0 || gridCols == 0) return newCanvas(1, 1, transparent);
+    if (gridRows == 0 || gridCols == 0)
+        return newCanvas(1, 1, transparent);
 
     const int halfW = config.tileWidth / tileHalvingFactor;
     const int halfH = config.tileHeight / tileHalvingFactor;
@@ -144,21 +146,21 @@ Canvas renderIsoMap(const IsoConfig& config,
     // Expand all cells as (wx, wy, tileIndex), in row-major order.
     std::vector<Cell> cells;
     for (int wy = 0; wy < gridRows; ++wy) {
-        const std::vector<int>& cols = grid[static_cast<std::size_t>(wy)];
+        const std::vector<int> &cols = grid[static_cast<std::size_t>(wy)];
         const int rowLen = static_cast<int>(cols.size());
         for (int wx = 0; wx < rowLen; ++wx)
-            cells.push_back(Cell{ wx, wy, cols[static_cast<std::size_t>(wx)] });
+            cells.push_back(Cell{wx, wy, cols[static_cast<std::size_t>(wx)]});
     }
 
     // Back-to-front depth sort; stable to keep equal-depth ties in row-major order.
-    std::stable_sort(cells.begin(), cells.end(), [](const Cell& a, const Cell& b) {
-        return isoDepthCompare(a.wx, a.wy, b.wx, b.wy) < 0;
-    });
+    std::stable_sort(cells.begin(), cells.end(),
+                     [](const Cell &a, const Cell &b) { return isoDepthCompare(a.wx, a.wy, b.wx, b.wy) < 0; });
 
-    for (const Cell& cell : cells) {
-        const auto it = std::find_if(tiles.begin(), tiles.end(),
-                                     [&](const IsoTile& t) { return t.index == cell.tileIdx; });
-        if (it == tiles.end()) continue;
+    for (const Cell &cell : cells) {
+        const auto it =
+            std::find_if(tiles.begin(), tiles.end(), [&](const IsoTile &t) { return t.index == cell.tileIdx; });
+        if (it == tiles.end())
+            continue;
         const Point screen = worldToScreen(config, cell.wx, cell.wy);
         stamp(out, screen.x + originOffsetX, screen.y + originOffsetY, it->canvas);
     }

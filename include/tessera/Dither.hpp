@@ -16,6 +16,6 @@ enum class DitherMatrix {
 // Reduce a canvas to a palette via ordered dithering: each pixel is nudged by a
 // position-dependent Bayer threshold, then mapped to the nearest palette color.
 // Returns a fresh canvas; the input is returned unchanged for an empty palette.
-Canvas orderedDither(DitherMatrix matrix, const Palette& palette, const Canvas& canvas);
+Canvas orderedDither(DitherMatrix matrix, const Palette &palette, const Canvas &canvas);
 
 } // namespace tessera

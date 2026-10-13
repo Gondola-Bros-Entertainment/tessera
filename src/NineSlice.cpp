@@ -16,11 +16,13 @@ constexpr int borderClampDivisor = 2;
 // Map a destination coordinate to its source coordinate.
 // Left/top border: pass through. Center: scale proportionally. Right/bottom
 // border: offset from the end.
-int mapCoord(int dst, int border1, int border2, int centerSrc, int centerDst,
-             int srcSize, int dstSize) {
-    if (dst < border1) return dst;
-    if (dst >= dstSize - border2) return srcSize - (dstSize - dst);
-    if (centerDst <= 0) return border1;
+int mapCoord(int dst, int border1, int border2, int centerSrc, int centerDst, int srcSize, int dstSize) {
+    if (dst < border1)
+        return dst;
+    if (dst >= dstSize - border2)
+        return srcSize - (dstSize - dst);
+    if (centerDst <= 0)
+        return border1;
     const int localDst = dst - border1;
     const int mapped = localDst * centerSrc / centerDst;
     return border1 + std::min(centerSrc - 1, mapped);
@@ -28,12 +30,11 @@ int mapCoord(int dst, int border1, int border2, int centerSrc, int centerDst,
 
 } // namespace
 
-NineSlice nineSlice(const Canvas& canvas, int left, int right, int top, int bottom) {
-    return NineSlice{ canvas, std::max(0, left), std::max(0, right),
-                      std::max(0, top), std::max(0, bottom) };
+NineSlice nineSlice(const Canvas &canvas, int left, int right, int top, int bottom) {
+    return NineSlice{canvas, std::max(0, left), std::max(0, right), std::max(0, top), std::max(0, bottom)};
 }
 
-Canvas renderNineSlice(const NineSlice& ns, int targetW, int targetH) {
+Canvas renderNineSlice(const NineSlice &ns, int targetW, int targetH) {
     const int srcW = ns.canvas.w;
     const int srcH = ns.canvas.h;
     const int left = std::min(ns.left, srcW / borderClampDivisor);
