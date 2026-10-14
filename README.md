@@ -26,7 +26,7 @@ int main() {
 | Header | Provides |
 | --- | --- |
 | `Canvas.hpp` | The canvas, pixel access, lines, rectangles, circles, cropping |
-| `Color.hpp` | RGBA colors, blending, HSL and HSV, color transforms |
+| `Color.hpp` | RGBA colors, blending, HSL and HSV, sRGB and linear light, color transforms |
 | `Draw.hpp` | Thick and anti-aliased lines, polygons, ellipses, arcs, Bézier and Catmull-Rom curves, rounded rectangles, pattern fills |
 | `Gradient.hpp` | Linear, radial and diagonal gradients |
 | `Compose.hpp` | Stamping, overlays, blend modes, masks |

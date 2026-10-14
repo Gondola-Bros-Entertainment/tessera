@@ -2,7 +2,9 @@
 #include "tessera/Color.hpp"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
+#include <cstddef>
 
 namespace tessera {
 namespace {
@@ -13,6 +15,15 @@ constexpr double channelMid = 128.0;
 constexpr double colorEps = 1.0e-10;
 constexpr double hueSegment = 60.0;
 constexpr double fullCircle = 360.0;
+
+constexpr int channelValues = 256;
+// The sRGB transfer function, which is linear below its thresholds.
+constexpr double srgbEncodedThreshold = 0.04045;
+constexpr double srgbLinearThreshold = 0.0031308;
+constexpr double srgbLinearSlope = 12.92;
+constexpr double srgbScale = 1.055;
+constexpr double srgbOffset = 0.055;
+constexpr double srgbExponent = 2.4;
 
 // BT.709 luminance weights (sum to 1.0).
 constexpr double lumWeightR = 0.2126;
@@ -188,6 +199,26 @@ Color shiftHueColor(double degrees, Color c) {
     HSL hsl = toHSL(c);
     hsl.h = wrapHue(hsl.h + degrees);
     return withAlpha(c.a, fromHSL(hsl));
+}
+
+double srgbToLinear(std::uint8_t value) {
+    static const std::array<double, channelValues> table = [] {
+        std::array<double, channelValues> values{};
+        for (int v = 0; v < channelValues; ++v) {
+            const double s = static_cast<double>(v) / channelMaxF;
+            values[static_cast<std::size_t>(v)] =
+                s <= srgbEncodedThreshold ? s / srgbLinearSlope : std::pow((s + srgbOffset) / srgbScale, srgbExponent);
+        }
+        return values;
+    }();
+    return table[value];
+}
+
+std::uint8_t linearToSrgb(double l) {
+    const double clamped = clampUnit(l);
+    const double s = clamped <= srgbLinearThreshold ? clamped * srgbLinearSlope
+                                                    : srgbScale * std::pow(clamped, 1.0 / srgbExponent) - srgbOffset;
+    return clampRound(s * channelMaxF);
 }
 
 } // namespace tessera

@@ -2,7 +2,6 @@
 #include "tessera/Transform.hpp"
 
 #include <algorithm>
-#include <array>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -58,36 +57,6 @@ bool hasOpaqueNeighbor(const Canvas &c, int x, int y) {
 
 // The largest channel value, which stands for 1.
 constexpr double channelMax = 255.0;
-constexpr int channelValues = 256;
-// The sRGB transfer function, which is linear below its thresholds.
-constexpr double srgbEncodedThreshold = 0.04045;
-constexpr double srgbLinearThreshold = 0.0031308;
-constexpr double srgbLinearSlope = 12.92;
-constexpr double srgbScale = 1.055;
-constexpr double srgbOffset = 0.055;
-constexpr double srgbExponent = 2.4;
-
-// Linear light of each 8-bit sRGB channel value.
-const std::array<double, channelValues> &linearTable() {
-    static const std::array<double, channelValues> table = [] {
-        std::array<double, channelValues> values{};
-        for (int v = 0; v < channelValues; ++v) {
-            const double s = static_cast<double>(v) / channelMax;
-            values[static_cast<std::size_t>(v)] =
-                s <= srgbEncodedThreshold ? s / srgbLinearSlope : std::pow((s + srgbOffset) / srgbScale, srgbExponent);
-        }
-        return values;
-    }();
-    return table;
-}
-
-// The 8-bit sRGB channel value nearest to linear light l, clamped to [0, 1].
-std::uint8_t toSrgb(double l) {
-    const double clamped = std::clamp(l, 0.0, 1.0);
-    const double s = clamped <= srgbLinearThreshold ? clamped * srgbLinearSlope
-                                                    : srgbScale * std::pow(clamped, 1.0 / srgbExponent) - srgbOffset;
-    return static_cast<std::uint8_t>(std::lround(s * channelMax));
-}
 
 // Weighted sums of colors in linear light.
 struct LinearSum {
@@ -95,16 +64,16 @@ struct LinearSum {
 };
 
 void accumulate(LinearSum &sum, Color c, double weight) {
-    const auto &linear = linearTable();
-    sum.r += linear[c.r] * weight;
-    sum.g += linear[c.g] * weight;
-    sum.b += linear[c.b] * weight;
+    sum.r += srgbToLinear(c.r) * weight;
+    sum.g += srgbToLinear(c.g) * weight;
+    sum.b += srgbToLinear(c.b) * weight;
     sum.weight += weight;
 }
 
 // The weighted mean color of a sum with positive weight, with alpha a.
 Color meanColor(const LinearSum &sum, std::uint8_t a) {
-    return Color{toSrgb(sum.r / sum.weight), toSrgb(sum.g / sum.weight), toSrgb(sum.b / sum.weight), a};
+    return Color{linearToSrgb(sum.r / sum.weight), linearToSrgb(sum.g / sum.weight), linearToSrgb(sum.b / sum.weight),
+                 a};
 }
 
 // Neighbors of a pixel lie within this many pixels along each axis.
