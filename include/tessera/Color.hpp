@@ -51,6 +51,12 @@ Color scaleAlpha(double factor, Color c); // scale alpha by a factor in [0,1]
 
 constexpr Color withAlpha(std::uint8_t alpha, Color c) { return {c.r, c.g, c.b, alpha}; }
 
+// ---- linear light ----------------------------------------------------------
+// The linear light, in [0,1], of an 8-bit sRGB channel value.
+double srgbToLinear(std::uint8_t value);
+// The 8-bit sRGB channel value nearest to linear light l, which clamps to [0,1].
+std::uint8_t linearToSrgb(double l);
+
 // ---- color space conversions ----------------------------------------------
 HSL toHSL(Color c);
 Color fromHSL(HSL hsl);

@@ -5,6 +5,8 @@
 
 #include <doctest/doctest.h>
 
+#include <cstdint>
+
 using namespace tessera;
 using namespace tessera::test;
 
@@ -127,6 +129,19 @@ TEST_CASE("Color math blends, multiplies and composites") {
     CHECK(alphaBlend(transparent, blue) == blue);
     CHECK(near(scaleAlpha(0.5, white), Color{255, 255, 255, 128}));
     CHECK(withAlpha(7, green) == Color{0, 255, 0, 7});
+}
+
+TEST_CASE("Every sRGB value survives a round trip through linear light") {
+    for (int v = 0; v < 256; ++v) {
+        const auto value = static_cast<std::uint8_t>(v);
+        CHECK(linearToSrgb(srgbToLinear(value)) == value);
+    }
+    CHECK(srgbToLinear(0) == 0.0);
+    CHECK(srgbToLinear(255) == 1.0);
+    // Half the light encodes well above half the scale.
+    CHECK(linearToSrgb(0.5) == 188);
+    CHECK(linearToSrgb(-1.0) == 0);
+    CHECK(linearToSrgb(2.0) == 255);
 }
 
 TEST_CASE("HSL and HSV round-trip the primary and secondary colors") {
