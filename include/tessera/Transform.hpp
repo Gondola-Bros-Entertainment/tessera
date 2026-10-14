@@ -1,4 +1,4 @@
-// tessera - canvas transforms: flip, rotate, scale, shear, outline, shadow.
+// tessera - canvas transforms: flip, rotate, scale, shear, outline, shadow, edge color.
 #pragma once
 
 #include "Canvas.hpp"
@@ -25,6 +25,12 @@ Canvas scaleNearest(int factor, const Canvas &c);
 Canvas scaleBilinear(double factor, const Canvas &c);
 // Bilinear scale to exact dimensions (each clamps to a minimum of 1).
 Canvas scaleTo(int targetW, int targetH, const Canvas &c);
+// Shrink by an integer factor: each output pixel is the mean of the factor x factor
+// block it covers, with pixels past the edges counting as transparent. Color is
+// averaged in linear light and weighted by alpha, so shapes drawn factor times larger
+// come out anti-aliased, without dark fringes. The result is ceil(w / factor) by
+// ceil(h / factor); factor <= 1 returns a copy.
+Canvas downscaleArea(int factor, const Canvas &c);
 
 // ---- shear -----------------------------------------------------------------
 // Shift each row by factor * (y - height/2) pixels; positive shifts bottom right.
@@ -38,5 +44,11 @@ Canvas outline(Color outlineColor, const Canvas &c);
 // Composite a shadow (shadowColor where the sprite is opaque) offset by (dx,dy)
 // behind the original. The canvas grows to fit the offset.
 Canvas dropShadow(int dx, int dy, Color shadowColor, const Canvas &c);
+// Give every fully transparent pixel the color of the nearest visible pixels, keeping
+// its alpha at 0, so that filtering never blends a sprite's edges toward the color of
+// empty space. Rings fill outward from the visible pixels, each pixel taking the mean,
+// in linear light, of its 8-neighbors in earlier rings. Visible pixels are unchanged,
+// and a canvas without any is returned as it is.
+Canvas spreadEdgeColor(const Canvas &c);
 
 } // namespace tessera

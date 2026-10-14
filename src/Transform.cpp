@@ -2,8 +2,13 @@
 #include "tessera/Transform.hpp"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
+#include <cstddef>
+#include <cstdint>
 #include <cstdlib>
+#include <utility>
+#include <vector>
 
 namespace tessera {
 namespace {
@@ -50,6 +55,60 @@ bool hasOpaqueNeighbor(const Canvas &c, int x, int y) {
     const auto opaque = [&](int nx, int ny) { return inBounds(c, nx, ny) && getPixel(c, nx, ny).a > 0; };
     return opaque(x - 1, y) || opaque(x + 1, y) || opaque(x, y - 1) || opaque(x, y + 1);
 }
+
+// The largest channel value, which stands for 1.
+constexpr double channelMax = 255.0;
+constexpr int channelValues = 256;
+// The sRGB transfer function, which is linear below its thresholds.
+constexpr double srgbEncodedThreshold = 0.04045;
+constexpr double srgbLinearThreshold = 0.0031308;
+constexpr double srgbLinearSlope = 12.92;
+constexpr double srgbScale = 1.055;
+constexpr double srgbOffset = 0.055;
+constexpr double srgbExponent = 2.4;
+
+// Linear light of each 8-bit sRGB channel value.
+const std::array<double, channelValues> &linearTable() {
+    static const std::array<double, channelValues> table = [] {
+        std::array<double, channelValues> values{};
+        for (int v = 0; v < channelValues; ++v) {
+            const double s = static_cast<double>(v) / channelMax;
+            values[static_cast<std::size_t>(v)] =
+                s <= srgbEncodedThreshold ? s / srgbLinearSlope : std::pow((s + srgbOffset) / srgbScale, srgbExponent);
+        }
+        return values;
+    }();
+    return table;
+}
+
+// The 8-bit sRGB channel value nearest to linear light l, clamped to [0, 1].
+std::uint8_t toSrgb(double l) {
+    const double clamped = std::clamp(l, 0.0, 1.0);
+    const double s = clamped <= srgbLinearThreshold ? clamped * srgbLinearSlope
+                                                    : srgbScale * std::pow(clamped, 1.0 / srgbExponent) - srgbOffset;
+    return static_cast<std::uint8_t>(std::lround(s * channelMax));
+}
+
+// Weighted sums of colors in linear light.
+struct LinearSum {
+    double r{}, g{}, b{}, weight{};
+};
+
+void accumulate(LinearSum &sum, Color c, double weight) {
+    const auto &linear = linearTable();
+    sum.r += linear[c.r] * weight;
+    sum.g += linear[c.g] * weight;
+    sum.b += linear[c.b] * weight;
+    sum.weight += weight;
+}
+
+// The weighted mean color of a sum with positive weight, with alpha a.
+Color meanColor(const LinearSum &sum, std::uint8_t a) {
+    return Color{toSrgb(sum.r / sum.weight), toSrgb(sum.g / sum.weight), toSrgb(sum.b / sum.weight), a};
+}
+
+// Neighbors of a pixel lie within this many pixels along each axis.
+constexpr int neighborReach = 1;
 
 } // namespace
 
@@ -126,6 +185,27 @@ Canvas scaleTo(int targetW, int targetH, const Canvas &c) {
     return scaleToImpl(std::max(1, targetW), std::max(1, targetH), c);
 }
 
+Canvas downscaleArea(int factor, const Canvas &c) {
+    if (factor <= 1)
+        return c;
+    const int newW = (c.w + factor - 1) / factor;
+    const int newH = (c.h + factor - 1) / factor;
+    const double area = static_cast<double>(factor) * static_cast<double>(factor);
+    return generate(newW, newH, [&](int ox, int oy) {
+        LinearSum sum;
+        const int x0 = ox * factor;
+        const int y0 = oy * factor;
+        for (int y = y0; y < std::min(y0 + factor, c.h); ++y)
+            for (int x = x0; x < std::min(x0 + factor, c.w); ++x) {
+                const Color px = getPixel(c, x, y);
+                accumulate(sum, px, static_cast<double>(px.a) / channelMax);
+            }
+        if (sum.weight <= 0.0)
+            return transparent;
+        return meanColor(sum, static_cast<std::uint8_t>(std::lround(sum.weight / area * channelMax)));
+    });
+}
+
 Canvas shearH(double factor, const Canvas &c) {
     if (std::abs(factor) < scaleEpsilon)
         return c;
@@ -187,6 +267,52 @@ Canvas dropShadow(int dx, int dy, Color shadowColor, const Canvas &c) {
             return hasShadow ? alphaBlend(origPixel, shadowColor) : origPixel;
         return hasShadow ? shadowColor : transparent;
     });
+}
+
+Canvas spreadEdgeColor(const Canvas &c) {
+    // Each pixel's ring: 0 for visible pixels, then the step at which the fill reached it.
+    constexpr int unfilled = -1;
+    // Neighbors in earlier rings count equally.
+    constexpr double equalWeight = 1.0;
+    const auto index = [&](int x, int y) {
+        return static_cast<std::size_t>(y) * static_cast<std::size_t>(c.w) + static_cast<std::size_t>(x);
+    };
+    std::vector<int> ring(static_cast<std::size_t>(c.w) * static_cast<std::size_t>(c.h), unfilled);
+    std::vector<Point> frontier;
+    for (int y = 0; y < c.h; ++y)
+        for (int x = 0; x < c.w; ++x)
+            if (getPixel(c, x, y).a > 0) {
+                ring[index(x, y)] = 0;
+                frontier.push_back({x, y});
+            }
+    Canvas out = c;
+    for (int current = 0; !frontier.empty(); ++current) {
+        std::vector<Point> next;
+        for (const Point p : frontier)
+            for (int dy = -neighborReach; dy <= neighborReach; ++dy)
+                for (int dx = -neighborReach; dx <= neighborReach; ++dx) {
+                    const int x = p.x + dx;
+                    const int y = p.y + dy;
+                    if (inBounds(c, x, y) && ring[index(x, y)] == unfilled) {
+                        ring[index(x, y)] = current + 1;
+                        next.push_back({x, y});
+                    }
+                }
+        // Pixels of earlier rings are final, so the order of this ring does not matter.
+        for (const Point p : next) {
+            LinearSum sum;
+            for (int dy = -neighborReach; dy <= neighborReach; ++dy)
+                for (int dx = -neighborReach; dx <= neighborReach; ++dx) {
+                    const int x = p.x + dx;
+                    const int y = p.y + dy;
+                    if (inBounds(c, x, y) && ring[index(x, y)] != unfilled && ring[index(x, y)] <= current)
+                        accumulate(sum, getPixel(out, x, y), equalWeight);
+                }
+            setPixel(out, p.x, p.y, meanColor(sum, transparent.a));
+        }
+        frontier = std::move(next);
+    }
+    return out;
 }
 
 } // namespace tessera
