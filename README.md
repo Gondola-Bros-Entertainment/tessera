@@ -29,6 +29,7 @@ int main() {
 | `Color.hpp` | RGBA colors, blending, HSL and HSV, sRGB and linear light, color transforms |
 | `Draw.hpp` | Thick and anti-aliased lines, polygons, ellipses, arcs, Bézier and Catmull-Rom curves, rounded rectangles, pattern fills |
 | `Gradient.hpp` | Linear, radial and diagonal gradients |
+| `Vector.hpp` | Circles, ellipses, rounded rectangles, capsules, polygons, curves and rings with solid or gradient fills and outlines, rasterized anti-aliased at any size |
 | `Compose.hpp` | Stamping, overlays, blend modes, masks |
 | `Transform.hpp` | Flips, rotations, scaling (nearest, bilinear and area average), shears, outlines, drop shadows, edge color spreading |
 | `Filter.hpp` | Box and Gaussian blur, sharpen, edge detection, bloom |

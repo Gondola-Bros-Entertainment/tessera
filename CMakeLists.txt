@@ -43,6 +43,7 @@ add_library(tessera
     src/Text.cpp
     src/Tilemap.cpp
     src/Transform.cpp
+    src/Vector.cpp
     src/VFX.cpp)
 add_library(tessera::tessera ALIAS tessera)
 target_include_directories(tessera PUBLIC include)
@@ -65,7 +66,8 @@ if(TESSERA_BUILD_TESTS)
         tests/procedural_tests.cpp
         tests/sprite_tests.cpp
         tests/text_tests.cpp
-        tests/transform_tests.cpp)
+        tests/transform_tests.cpp
+        tests/vector_tests.cpp)
     target_link_libraries(tessera_tests PRIVATE tessera)
     target_include_directories(tessera_tests SYSTEM PRIVATE third_party/doctest)
     tessera_warnings(tessera_tests)
