@@ -30,7 +30,7 @@ int main() {
 | `Draw.hpp` | Thick and anti-aliased lines, polygons, ellipses, arcs, Bézier and Catmull-Rom curves, rounded rectangles, pattern fills |
 | `Gradient.hpp` | Linear, radial and diagonal gradients |
 | `Compose.hpp` | Stamping, overlays, blend modes, masks |
-| `Transform.hpp` | Flips, rotations, scaling, shears, outlines, drop shadows |
+| `Transform.hpp` | Flips, rotations, scaling (nearest, bilinear and area average), shears, outlines, drop shadows, edge color spreading |
 | `Filter.hpp` | Box and Gaussian blur, sharpen, edge detection, bloom |
 | `Adjust.hpp` | Grayscale, tint, brightness, contrast, saturation, hue, posterize, threshold, sepia, color lookup tables |
 | `Palette.hpp`, `Dither.hpp` | Palettes, palette swaps, median-cut quantization, ordered dithering |
