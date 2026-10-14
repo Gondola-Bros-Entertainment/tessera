@@ -77,4 +77,4 @@ Formatting follows `.clang-format` (clang-format 22).
 
 ## License
 
-BSD-3-Clause. See [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE).
