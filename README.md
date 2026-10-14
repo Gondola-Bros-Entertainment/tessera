@@ -1,5 +1,10 @@
 # tessera
 
+**Tessera is no longer developed.** For vector art, use [Linea](https://github.com/Gondola-Bros-Entertainment/linea),
+which draws paths, strokes, gradients, clips, blurs and text with exact coverage and writes PNG and SVG. For sprites,
+sprite sheets and effects drawn on the GPU, use [Anima](https://github.com/Gondola-Bros-Entertainment/anima). This
+repository stays readable and its code keeps building, but it takes no further changes.
+
 A pure C++20 raster engine. Build images from code: draw primitives, noise, gradients, blend modes, transforms, sprites,
 tilemaps and procedural effects. No image files, no GPU, no dependencies beyond the standard library.
 
